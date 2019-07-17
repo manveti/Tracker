@@ -6,6 +6,7 @@ namespace Tracker {
     /// <summary>
     /// Snapshot of campaign state.
     /// </summary>
+    [Serializable]
     public class State {
     }
 
@@ -13,6 +14,7 @@ namespace Tracker {
     /// <summary>
     /// Diff between two campaign states.
     /// </summary>
+    [Serializable]
     public class StateChange {
     }
 }

@@ -5,6 +5,7 @@ namespace Tracker {
     /// <summary>
     /// Generic time interval, to be interpreted by a <see cref="Calendar"/>.
     /// </summary>
+    [Serializable]
     public class Interval {
         public readonly Decimal value;
 
@@ -17,6 +18,7 @@ namespace Tracker {
     /// <summary>
     /// Generic timestamp, to be interpreted by a <see cref="Calendar"/>.
     /// </summary>
+    [Serializable]
     public class Timestamp : IComparable {
         public readonly Decimal value;
 
