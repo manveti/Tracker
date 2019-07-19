@@ -8,6 +8,18 @@ namespace Tracker {
     /// </summary>
     [Serializable]
     public class State {
+        public State copy() {
+            //TODO: create a deep copy of this
+            return new State();
+        }
+
+        public void applyChange(StateChange change) {
+            //TODO: apply change
+        }
+
+        public void revertChange(StateChange change) {
+            //TODO: apply change in reverse
+        }
     }
 
 
