@@ -4,6 +4,16 @@ using System.Collections.Generic;
 
 namespace Tracker {
     /// <summary>
+    /// Exception for invalid state or change which invalidates state.
+    /// </summary>
+    public class InvalidState : Exception {
+        public InvalidState() : base() { }
+        public InvalidState(string message) : base(message) { }
+        public InvalidState(string message, Exception innerException) : base(message, innerException) { }
+    }
+
+
+    /// <summary>
     /// Snapshot of campaign state.
     /// </summary>
     [Serializable]
@@ -14,11 +24,11 @@ namespace Tracker {
         }
 
         public void applyChange(StateChange change) {
-            //TODO: apply change
+            //TODO: apply change; raise InvalidState on error
         }
 
         public void revertChange(StateChange change) {
-            //TODO: apply change in reverse
+            //TODO: apply change in reverse; raise InvalidState on error
         }
     }
 

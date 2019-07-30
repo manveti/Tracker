@@ -4,6 +4,16 @@ using System.Collections.Generic;
 
 namespace Tracker {
     /// <summary>
+    /// Exception for invalid event.
+    /// </summary>
+    public class InvalidEvent : Exception {
+        public InvalidEvent() : base() { }
+        public InvalidEvent(string message) : base(message) { }
+        public InvalidEvent(string message, Exception innerException) : base(message, innerException) { }
+    }
+
+
+    /// <summary>
     /// A single event in the campaign timeline, along with the changes it brings about in the campaign state.
     /// </summary>
     [Serializable]
@@ -21,7 +31,7 @@ namespace Tracker {
     [Serializable]
     public class SkipDiff {
         public readonly int base_index;
-        public readonly StateChange change;
+        public StateChange change;
 
         public SkipDiff(int base_index, StateChange change) {
             this.base_index = base_index;
@@ -88,6 +98,9 @@ namespace Tracker {
         /// <param name="t">The timestamp of the state to retrieve</param>
         /// <returns>The state of the campaign at the specified timestamp</returns>
         public State getState(Timestamp t) {
+            if ((this.events.Count <= 0) || (t < this.events[0].timestamp)) {
+                return new State();
+            }
             State state = this.state.copy();
             if (t < this.timestamp) {
                 int idx = this._getStateIndex(t);
@@ -108,29 +121,84 @@ namespace Tracker {
         /// updated to reflect the state as of that timestamp.
         /// </summary>
         /// <param name="e">The event to add</param>
+        /// <exception cref="InvalidEvent">The event is malformed or shares a timestamp with an existing event</exception>
+        /// <exception cref="InvalidState">The event's change cannot be applied to the state at the event's timestamp</exception>
         public void addEvent(Event e) {
-            //if in bad state and e.timestamp >= first bad event's timestamp: insert without any updating; return
-            //if e.timestamp > this.timestamp: (append case)
-            //  try to apply e; reject on failure
-            //  insert e
-            //  mark some skip diffs backwards for updating to insert index
-            //  while in bad state:
-            //    try to apply next event; break on failure
-            //    update this.timestamp to event.timestamp
-            //    mark some skip diffs backwards for updating to event index
-            //  update marked skip diffs
-            //else: (insert case)
-            //  get state and insert index at e.timestamp
-            //  try to apply e to state; reject on failure
-            //  for each following event:
-            //    try to apply next event; on failure: truncate this and remaining skip diffs; break
-            //  update this.timestamp to timestamp of last good event
-            //  insert e; insert skip diff for e based on state
-            //  for each valid event:
-            //    if skip diff after last good: update skip diff to state
-            //    elif skip diff base_index >= insert index:
-            //      if event before e: add e.change to skip diff
-            //      increment skip diff base_index
+            if (e.timestamp == this.timestamp) {
+                throw new InvalidEvent("Already an event with this timestamp");
+            }
+            int idx = this._getStateIndex(e.timestamp);
+            if ((idx > 0) && (e.timestamp == this.events[idx - 1].timestamp)) {
+                throw new InvalidEvent("Already an event with this timestamp");
+            }
+            if ((this.events.Count > this.skip_diffs.Count) && (e.timestamp >= this.events[this.skip_diffs.Count].timestamp)) {
+                // e falls after first invalid event; insert without updating state
+                this.events.Insert(idx, e);
+                return;
+            }
+
+            State state = this.state.copy();
+            int validStates;
+            if (e.timestamp > this.timestamp) {
+                // appending an event to the end of the valid events
+                state.applyChange(e.change);
+                this.events.Insert(idx, e);
+                //mark some skip diffs backwards for updating to idx
+                // try to apply outstanding events that might've been made valid by this one
+                for (validStates = idx + 1; validStates < this.events.Count; validStates++) {
+                    State newState = state.copy();
+                    try {
+                        newState.applyChange(this.events[validStates].change);
+                    }
+                    catch (InvalidState) {
+                        break;
+                    }
+                    state = newState;
+                    //mark some skip diffs backwards for updating to validStates
+                }
+                //update marked skip diffs
+                this.state = state;
+                this.timestamp = this.events[validStates - 1].timestamp;
+                return;
+            }
+            // inserting an event between valid events
+            this._adjustState(state, idx);
+            state.applyChange(e.change);
+            for (validStates = idx + 1; validStates < this.events.Count; validStates++) {
+                State newState = state.copy();
+                try {
+                    newState.applyChange(this.events[validStates].change);
+                }
+                catch (InvalidState) {
+                    break;
+                }
+                state = newState;
+            }
+            this.state = state;
+            this.timestamp = this.events[validStates - 1].timestamp;
+            if (this.skip_diffs.Count > validStates) {
+                this.skip_diffs.RemoveRange(validStates, this.skip_diffs.Count - validStates);
+            }
+            List<StateChange> diffs = new List<StateChange>();
+            StateChange diff = new StateChange();
+            for (int i = validStates - 1; i >= this.skip_diffs.Count; i--) {
+                //diff += this.events[i].change
+                diffs.Add(diff);
+            }
+            for (int i = 0; i < validStates; i++) {
+                if (i >= this.skip_diffs.Count) {
+                    this.skip_diffs.Add(new SkipDiff(validStates, diffs[validStates - i - 1]));
+                }
+                else if ((this.skip_diffs[i].base_index > idx) && (this.skip_diffs[i].change != null)) {
+                    //this.skip_diffs[i].change -= this.events[this.skip_diffs[i].base_index].change;
+                    if (i <= idx) {
+                        //this.skip_diffs[i].change += e.change;
+                    }
+                    else {
+                        //this.skip_diffs[i].change += this.events[i].change;
+                    }
+                }
+            }
         }
 
         //edit event (update position if necessary; update current timestamp/state; recompute skip diffs)
