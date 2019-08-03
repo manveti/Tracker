@@ -85,10 +85,10 @@ namespace Tracker {
             if (idx >= this.skip_diffs.Count) { return; }
             this._adjustState(state, this.skip_diffs[idx].base_index);
             if (!(this.skip_diffs[idx].change is null)) {
-                state.revertChange(this.skip_diffs[idx].change);
+                this.skip_diffs[idx].change.revertFromState(state);
             }
             else {
-                state.revertChange(this.events[idx].change);
+                this.events[idx].change.revertFromState(state);
             }
         }
 
@@ -141,14 +141,14 @@ namespace Tracker {
             int validStates;
             if (e.timestamp > this.timestamp) {
                 // appending an event to the end of the valid events
-                state.applyChange(e.change);
+                e.change.applyToState(state);
                 this.events.Insert(idx, e);
                 //mark some skip diffs backwards for updating to idx
                 // try to apply outstanding events that might've been made valid by this one
                 for (validStates = idx + 1; validStates < this.events.Count; validStates++) {
                     State newState = state.copy();
                     try {
-                        newState.applyChange(this.events[validStates].change);
+                        this.events[validStates].change.applyToState(newState);
                     }
                     catch (InvalidState) {
                         break;
@@ -163,11 +163,12 @@ namespace Tracker {
             }
             // inserting an event between valid events
             this._adjustState(state, idx);
-            state.applyChange(e.change);
+            e.change.applyToState(state);
+            this.events.Insert(idx, e);
             for (validStates = idx + 1; validStates < this.events.Count; validStates++) {
                 State newState = state.copy();
                 try {
-                    newState.applyChange(this.events[validStates].change);
+                    this.events[validStates].change.applyToState(newState);
                 }
                 catch (InvalidState) {
                     break;
