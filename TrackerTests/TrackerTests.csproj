@@ -58,6 +58,7 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="CalendarTests.cs" />
+    <Compile Include="StateChangeTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

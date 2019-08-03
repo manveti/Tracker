@@ -45,12 +45,14 @@ namespace Tracker.Tests {
                 Assert.IsFalse(t1 <= nada);
                 Assert.IsFalse(t1 < nada);
 
+#pragma warning disable CS1718 // Comparison made to same variable
                 Assert.IsFalse(t1 > t1);
                 Assert.IsTrue(t1 >= t1);
                 Assert.IsTrue(t1 == t1);
                 Assert.IsFalse(t1 != t1);
                 Assert.IsTrue(t1 <= t1);
                 Assert.IsFalse(t1 < t1);
+#pragma warning restore CS1718 // Comparison made to same variable
 
                 for (int j = 0; j < nums.Length; j++) {
                     Timestamp t2 = new Timestamp(nums[j]);
