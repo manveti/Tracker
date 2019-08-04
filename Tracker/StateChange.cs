@@ -58,7 +58,8 @@ namespace Tracker {
             }
             foreach (string tag in store.aspects[this.aspect_id].tags) {
                 if ((!store.tag_index.ContainsKey(tag)) || (!store.tag_index[tag].Contains(this.aspect_id))) {
-                    throw new InvalidState("Cannot revert adding tag that doesn't exist.");
+                    // we shouldn't get here, but a missing tag shouldn't prevent a revert
+                    continue;
                 }
                 store.tag_index[tag].Remove(this.aspect_id);
                 if (store.tag_index[tag].Count <= 0) {
@@ -83,7 +84,8 @@ namespace Tracker {
             }
             foreach (string tag in store.aspects[this.aspect_id].tags) {
                 if ((!store.tag_index.ContainsKey(tag)) || (!store.tag_index[tag].Contains(this.aspect_id))) {
-                    throw new InvalidState("Cannot revert adding tag that doesn't exist.");
+                    // we shouldn't get here, but a missing tag shouldn't prevent a removal
+                    continue;
                 }
                 store.tag_index[tag].Remove(this.aspect_id);
                 if (store.tag_index[tag].Count <= 0) {
