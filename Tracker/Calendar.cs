@@ -18,6 +18,10 @@ namespace Tracker {
             return this.value.Equals(((Interval)obj).value);
         }
 
+        public override int GetHashCode() {
+            return this.value.GetHashCode();
+        }
+
         public static bool operator ==(Interval i1, Interval i2) {
             if (ReferenceEquals(i1, i2)) { return true; }
             if ((i1 is null) || (i2 is null)) { return false; }

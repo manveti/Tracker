@@ -275,4 +275,127 @@ namespace Tracker.Tests {
             Assert.IsTrue(store.removed_aspects.ContainsKey(noteAdd.aspect_id));
         }
     }
+
+
+    [TestClass]
+    public class StateAspectUpdateTests {
+        //TODO
+    }
+
+
+    [TestClass]
+    public class StateChangeTests {
+        [TestMethod]
+        public void test_add_remove_changes() {
+            NoteAspect note1 = new NoteAspect("This is a test note"), note2 = new NoteAspect("This is another test note");
+            StateAspectAdd note1Add = new StateAspectAdd(note1), note2Add = new StateAspectAdd(note2);
+            Guid updateGuid = Guid.NewGuid(), removeGuid = Guid.NewGuid();
+            StateAspectRemove noteRemove = new StateAspectRemove(removeGuid);
+            //TODO: update
+            StateChange stateChange = new StateChange();
+
+            Assert.AreEqual(stateChange.additions.Count, 0);
+            Assert.AreEqual(stateChange.updates.Count, 0);
+            Assert.AreEqual(stateChange.removals.Count, 0);
+
+            // add an addition
+            stateChange.addChange(StateAspect.NOTE, note1Add);
+            Assert.AreEqual(stateChange.additions.Count, 1);
+            Assert.IsTrue(stateChange.additions.ContainsKey(StateAspect.NOTE));
+            Assert.AreEqual(stateChange.additions[StateAspect.NOTE].Count, 1);
+            Assert.IsTrue(stateChange.additions[StateAspect.NOTE].ContainsKey(note1Add.aspect_id));
+            Assert.AreEqual(stateChange.additions[StateAspect.NOTE][note1Add.aspect_id], note1Add);
+
+            // add a second addition
+            stateChange.addChange(StateAspect.NOTE, note2Add);
+            Assert.AreEqual(stateChange.additions.Count, 1);
+            Assert.IsTrue(stateChange.additions.ContainsKey(StateAspect.NOTE));
+            Assert.AreEqual(stateChange.additions[StateAspect.NOTE].Count, 2);
+            Assert.IsTrue(stateChange.additions[StateAspect.NOTE].ContainsKey(note2Add.aspect_id));
+            Assert.AreEqual(stateChange.additions[StateAspect.NOTE][note2Add.aspect_id], note2Add);
+
+            //TODO: add an update
+
+            // add a removal
+            stateChange.addChange(StateAspect.NOTE, noteRemove);
+            Assert.AreEqual(stateChange.removals.Count, 1);
+            Assert.IsTrue(stateChange.removals.ContainsKey(StateAspect.NOTE));
+            Assert.AreEqual(stateChange.removals[StateAspect.NOTE].Count, 1);
+            Assert.IsTrue(stateChange.removals[StateAspect.NOTE].ContainsKey(noteRemove.aspect_id));
+            Assert.AreEqual(stateChange.removals[StateAspect.NOTE][noteRemove.aspect_id], noteRemove);
+
+            // remove the first addition
+            stateChange.removeChange(StateAspect.NOTE, note1Add.aspect_id);
+            Assert.AreEqual(stateChange.additions.Count, 1);
+            Assert.IsTrue(stateChange.additions.ContainsKey(StateAspect.NOTE));
+            Assert.AreEqual(stateChange.additions[StateAspect.NOTE].Count, 1);
+            Assert.IsTrue(stateChange.additions[StateAspect.NOTE].ContainsKey(note2Add.aspect_id));
+            //TODO: Assert.AreEqual(stateChange.updates.Count, 1);
+            Assert.AreEqual(stateChange.removals.Count, 1);
+
+            // remove the second addition
+            stateChange.removeChange(StateAspect.NOTE, note2Add.aspect_id);
+            Assert.AreEqual(stateChange.additions.Count, 0);
+            //TODO: Assert.AreEqual(stateChange.updates.Count, 1);
+            Assert.AreEqual(stateChange.removals.Count, 1);
+
+            //TODO: remove the update
+
+            // remove the removal
+            stateChange.removeChange(StateAspect.NOTE, noteRemove.aspect_id);
+            Assert.AreEqual(stateChange.additions.Count, 0);
+            Assert.AreEqual(stateChange.updates.Count, 0);
+            Assert.AreEqual(stateChange.removals.Count, 0);
+        }
+
+        [TestMethod]
+        public void test_add_existing_aspect() {
+            NoteAspect note = new NoteAspect("This is a test note");
+            StateAspectAdd noteAdd = new StateAspectAdd(note);
+            StateAspectRemove noteRemove = new StateAspectRemove(noteAdd.aspect_id);
+            //TODO: update
+            StateChange stateChange = new StateChange();
+
+            // test pre-existing add
+            stateChange.addChange(StateAspect.NOTE, noteAdd);
+            Assert.ThrowsException<InvalidAspect>(() => { stateChange.addChange(StateAspect.NOTE, noteAdd); });
+            //TODO: update
+            Assert.ThrowsException<InvalidAspect>(() => { stateChange.addChange(StateAspect.NOTE, noteRemove); });
+            // clean up and verify we're still in a good state
+            stateChange.removeChange(StateAspect.NOTE, noteAdd.aspect_id);
+            Assert.AreEqual(stateChange.additions.Count, 0);
+            Assert.AreEqual(stateChange.updates.Count, 0);
+            Assert.AreEqual(stateChange.removals.Count, 0);
+
+            //TODO: test pre-existing update
+
+            // test pre-existing removal
+            stateChange.addChange(StateAspect.NOTE, noteRemove);
+            Assert.ThrowsException<InvalidAspect>(() => { stateChange.addChange(StateAspect.NOTE, noteAdd); });
+            //TODO: update
+            Assert.ThrowsException<InvalidAspect>(() => { stateChange.addChange(StateAspect.NOTE, noteRemove); });
+            // clean up and verify we're still in a good state
+            stateChange.removeChange(StateAspect.NOTE, noteRemove.aspect_id);
+            Assert.AreEqual(stateChange.additions.Count, 0);
+            Assert.AreEqual(stateChange.updates.Count, 0);
+            Assert.AreEqual(stateChange.removals.Count, 0);
+        }
+
+        [TestMethod]
+        public void test_remove_invalid() {
+            Guid validGuid = Guid.NewGuid(), invalidGuid = Guid.NewGuid();
+            StateAspectRemove noteRemove = new StateAspectRemove(validGuid);
+            StateChange stateChange = new StateChange();
+            stateChange.addChange(StateAspect.NOTE, noteRemove);
+
+            Assert.ThrowsException<InvalidAspect>(() => { stateChange.removeChange("invalid aspect", validGuid); });
+            Assert.ThrowsException<InvalidAspect>(() => { stateChange.removeChange(StateAspect.NOTE, invalidGuid); });
+            stateChange.removeChange(StateAspect.NOTE, validGuid);
+            Assert.AreEqual(stateChange.additions.Count, 0);
+            Assert.AreEqual(stateChange.updates.Count, 0);
+            Assert.AreEqual(stateChange.removals.Count, 0);
+        }
+
+        //TODO: apply/revert
+    }
 }

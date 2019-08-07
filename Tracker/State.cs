@@ -14,10 +14,22 @@ namespace Tracker {
 
 
     /// <summary>
+    /// Exception for an invalid state aspect.
+    /// </summary>
+    public class InvalidAspect : Exception {
+        public InvalidAspect() : base() { }
+        public InvalidAspect(string message) : base(message) { }
+        public InvalidAspect(string message, Exception innerException) : base(message, innerException) { }
+    }
+
+
+    /// <summary>
     /// Base class for aspects of campaign state.
     /// </summary>
     [Serializable]
-    public class StateAspect {
+    public abstract class StateAspect {
+        public const string NOTE = "note";
+
         public HashSet<string> tags;
 
         public StateAspect() {
@@ -28,9 +40,7 @@ namespace Tracker {
             this.tags = new HashSet<string>(aspect.tags);
         }
 
-        public virtual StateAspect copy() {
-            return new StateAspect(this);
-        }
+        public abstract StateAspect copy();
     }
 
 
@@ -104,6 +114,20 @@ namespace Tracker {
             State state = new State();
             state.notes = this.notes.copy();
             return state;
+        }
+
+        /// <summary>
+        /// Get the store for the specified aspect.
+        /// </summary>
+        /// <param name="aspect">The aspect store to get (one of <see cref="StateAspect"/>)</param>
+        /// <returns>The aspect store</returns>
+        /// <exception cref="InvalidAspect">The specified aspect was not valid</exception>
+        public StateAspectStore getStore(string aspect) {
+            switch (aspect) {
+            case StateAspect.NOTE:
+                return this.notes;
+            }
+            throw new InvalidAspect("Not a valid aspect type");
         }
     }
 }
